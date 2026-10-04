@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} – Price Comparison & AI Review Analysis{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('products', category=product.category) }}" class="text-decoration-none">{{ product.category }}</a></li>
+            <li class="breadcrumb-item active text-truncate" style="max-width: 300px;" aria-current="page">{{ product.name }}</li>
+        </ol>
+    </nav>
+
+    <!-- Product Overview Card -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+        <div class="row g-4 align-items-center">
+            <!-- Product Gallery Column -->
+            <div class="col-lg-4 text-center">
+                <div class="product-gallery-box bg-light rounded-4 p-4 d-flex align-items-center justify-content-center" style="height: 320px;">
+                    <img src="{{ product.image_url }}" alt="{{ product.name }}" class="img-fluid object-fit-contain mh-100" onerror="this.src='/static/images/placeholder.png';">
+                </div>
+                <div class="mt-2 text-muted fs-xs">
+                    <i class="bi bi-clock me-1"></i> Last updated: {{ product.last_updated|datetime_fmt }}
+                </div>
+            </div>
+
+            <!-- Product Details Column -->
+            <div class="col-lg-8">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1">
+                        <i class="bi bi-shop me-1"></i> {{ product.source_website }}
+                    </span>
+                    <span class="badge bg-secondary-subtle text-secondary">{{ product.category }}</span>
+                    {% if product.brand %}
+                    <span class="badge bg-light text-dark border">Brand: {{ product.brand }}</span>
+                    {% endif %}
+                </div>
+
+                <h3 class="fw-bold text-dark mb-2">{{ product.name }}</h3>
+
+                <!-- Rating and Reviews Summary -->
+                <div class="d-flex align-items-center gap-2 mb-3">
+                    <div class="rating-stars text-warning fs-6">
+                        {% set s = product.rating|stars %}
+                        {% for _ in range(s.full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                        {% for _ in range(s.half) %}<i class="bi bi-star-half"></i>{% endfor %}
+                        {% for _ in range(s.empty) %}<i class="bi bi-star"></i>{% endfor %}
+                    </div>
+                    <span class="fw-bold">{{ product.rating }} / 5.0</span>
+                    <span class="text-muted">• {{ product.review_count|default(0) }} customer reviews</span>
+                </div>
+
+                <p class="text-muted small mb-3">{{ product.description }}</p>
+
+                <!-- Pricing Display -->
+                <div class="p-3 bg-light rounded-3 border mb-4">
+                    <div class="d-flex align-items-baseline gap-3">
+                        <span class="display-6 fw-bold text-success">{{ product.current_price|inr }}</span>
+                        {% if product.original_price and product.original_price > product.current_price %}
+                        <span class="fs-5 text-muted text-decoration-line-through">{{ product.original_price|inr }}</span>
+                        <span class="badge bg-danger fs-6">{{ product.discount_percentage }}% OFF</span>
+                        {% endif %}
+                        <span class="badge bg-success-subtle text-success ms-auto">{{ product.availability }}</span>
+                    </div>
+                    <div class="small text-muted mt-1">
+                        * Prices are retrieved directly from official retail pages and are verified regularly.
+                    </div>
+                </div>
+
+                <!-- CTA Buttons -->
+                <div class="d-flex flex-wrap gap-3">
+                    <a href="{{ product.product_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-success btn-lg px-4 rounded-pill fw-bold shadow-sm">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Buy on {{ product.source_website }}
+                    </a>
+                    {% if equivalent_offers %}
+                    <a href="{{ url_for('compare', ids=product.id ~ ',' ~ (equivalent_offers|map(attribute='id')|join(','))) }}" class="btn btn-outline-primary btn-lg px-4 rounded-pill fw-semibold">
+                        <i class="bi bi-arrow-left-right me-1"></i> Compare Across {{ equivalent_offers|length + 1 }} Stores
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Multi-Store Alternative Deals -->
+    {% if equivalent_offers %}
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+        <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-tags-fill text-primary"></i> Alternative Store Offers for This Product
+        </h5>
+        <div class="row row-cols-1 row-cols-md-3 g-3">
+            {% for offer in equivalent_offers %}
+            <div class="col">
+                <div class="p-3 rounded-3 border bg-light d-flex flex-column h-100 justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-white text-dark border">{{ offer.source_website }}</span>
+                            <span class="fw-bold text-success fs-5">{{ offer.current_price|inr }}</span>
+                        </div>
+                        <p class="small text-muted mb-2 text-clamp-2">{{ offer.name }}</p>
+                    </div>
+                    <a href="{{ offer.product_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-outline-primary rounded-pill w-100 mt-2">
+                        View Offer <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Specifications & AI Review Analysis Tabs -->
+    <div class="row g-4 mb-4">
+        <!-- Left Column: Technical Specifications -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold mb-3 d-flex align-items-center gap-2">
+                    <i class="bi bi-card-checklist text-primary"></i> Key Specifications
+                </h5>
+                {% if product.specifications %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped align-middle mb-0">
+                        <tbody>
+                            {% for k, v in product.specifications.items() %}
+                            <tr>
+                                <td class="fw-semibold text-secondary w-40 small">{{ k }}</td>
+                                <td class="text-dark small">{{ v }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <p class="text-muted small">Standard retail specifications apply.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Right Column: Interactive Price History Chart -->
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <h5 class="fw-bold mb-0 d-flex align-items-center gap-2">
+                        <i class="bi bi-graph-up text-success"></i> Price History Observations
+                    </h5>
+                    <span class="badge bg-light text-muted border small">{{ price_history|length }} observations</span>
+                </div>
+                <p class="text-muted fs-xs mb-3">
+                    <i class="bi bi-info-circle me-1"></i> Historical observations are based on verified catalog records and do not predict future pricing.
+                </p>
+
+                {% if price_history and price_history|length > 1 %}
+                <div style="height: 220px;" class="position-relative">
+                    <canvas id="priceHistoryChart"></canvas>
+                </div>
+                {% else %}
+                <div class="p-4 text-center bg-light rounded-3 text-muted small my-auto">
+                    <i class="bi bi-clock-history fs-3 d-block mb-2"></i>
+                    Currently building historical price observations for this product. Check back soon for trend graphs!
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Customer Review Analysis Box -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 border-bottom pb-3 mb-3">
+            <div>
+                <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-robot text-warning"></i> AI Customer Review Intelligence
+                </h4>
+                <p class="text-muted small mb-0">
+                    Aggregated sentiment and aspect analysis based on authentic customer reviews.
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-{{ review_analysis.sentiment|sentiment_badge }} px-3 py-2 fs-6 rounded-pill">
+                    <i class="bi bi-emoji-smile me-1"></i> {{ review_analysis.sentiment }} Sentiment ({{ (review_analysis.sentiment_score * 100)|round|int }}%)
+                </span>
+                <span class="badge bg-light text-dark border fs-xs py-2">
+                    Model: {{ review_analysis.model_used }}
+                </span>
+            </div>
+        </div>
+
+        <!-- Pros & Cons Grid -->
+        <div class="row g-4 mb-3">
+            <!-- Positive Highlights -->
+            <div class="col-md-6">
+                <div class="p-3 bg-success-subtle rounded-3 border border-success-subtle h-100">
+                    <h6 class="fw-bold text-success d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-hand-thumbs-up-fill"></i> Positive Feedback Summary
+                    </h6>
+                    <p class="small text-success-emphasis mb-3">
+                        {{ review_analysis.positive_summary }}
+                    </p>
+                    <h6 class="fw-semibold small text-success">Key Praised Features:</h6>
+                    <ul class="list-unstyled small mb-0 d-flex flex-column gap-1">
+                        {% for pro in review_analysis.common_pros %}
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-check-circle-fill text-success"></i> <span>{{ pro }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Negative Highlights / Complaints -->
+            <div class="col-md-6">
+                <div class="p-3 bg-danger-subtle rounded-3 border border-danger-subtle h-100">
+                    <h6 class="fw-bold text-danger d-flex align-items-center gap-2 mb-2">
+                        <i class="bi bi-hand-thumbs-down-fill"></i> Customer Complaints & Cons
+                    </h6>
+                    <p class="small text-danger-emphasis mb-3">
+                        {{ review_analysis.negative_summary }}
+                    </p>
+                    <h6 class="fw-semibold small text-danger">Reported Drawbacks:</h6>
+                    <ul class="list-unstyled small mb-0 d-flex flex-column gap-1">
+                        {% for con in review_analysis.common_cons %}
+                        <li class="d-flex align-items-center gap-2">
+                            <i class="bi bi-x-circle-fill text-danger"></i> <span>{{ con }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Potential Concerns Alert -->
+        {% if review_analysis.potential_concerns %}
+        <div class="alert alert-warning border-0 rounded-3 small mb-0 d-flex align-items-center gap-2">
+            <i class="bi bi-shield-exclamation fs-5 text-warning"></i>
+            <div>
+                <strong>Buyer Advisory:</strong> {{ review_analysis.potential_concerns }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if price_history and price_history|length > 1 %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+        const rawHistory = {{ price_history|tojson }};
+        
+        const labels = rawHistory.map(item => item.retrieval_timestamp.split(' ')[0]);
+        const prices = rawHistory.map(item => item.price);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Price in INR (₹)',
+                    data: prices,
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 4,
+                    pointBackgroundColor: '#198754'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        ticks: {
+                            callback: function(value) {
+                                return '₹' + value.toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return 'Price: ₹' + context.parsed.y.toLocaleString('en-IN');
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

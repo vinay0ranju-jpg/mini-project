@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block title %}Search History – Personal Shopping Agent{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Search History</li>
+        </ol>
+    </nav>
+
+    <!-- Header Section -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-clock-history text-primary"></i> Local Search History
+                </h3>
+                <p class="text-muted small mb-0">
+                    Review and repeat previous product searches, price queries, and applied filters stored in local SQLite database.
+                </p>
+            </div>
+            {% if searches %}
+            <form action="{{ url_for('clear_history') }}" method="POST" onsubmit="return confirm('Are you sure you want to clear your search history?');">
+                <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-3">
+                    <i class="bi bi-trash me-1"></i> Clear Search History
+                </button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if searches %}
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light small">
+                    <tr>
+                        <th class="ps-3">Search Query</th>
+                        <th>Applied Filters</th>
+                        <th>Results Count</th>
+                        <th>Timestamp</th>
+                        <th class="text-end pe-3">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in searches %}
+                    <tr>
+                        <td class="ps-3 fw-bold text-dark">
+                            <i class="bi bi-search text-muted me-2 small"></i>{{ s.query }}
+                        </td>
+                        <td>
+                            <div class="d-flex flex-wrap gap-1">
+                                {% if s.category %}
+                                <span class="badge bg-light text-dark border fs-xs">Cat: {{ s.category }}</span>
+                                {% endif %}
+                                {% if s.min_price or s.max_price %}
+                                <span class="badge bg-light text-dark border fs-xs">Price: ₹{{ s.min_price|default(0)|int }} - ₹{{ s.max_price|default('Any') }}</span>
+                                {% endif %}
+                                {% if s.preferred_website %}
+                                <span class="badge bg-light text-dark border fs-xs">Store: {{ s.preferred_website }}</span>
+                                {% endif %}
+                                {% if not s.category and not s.min_price and not s.max_price and not s.preferred_website %}
+                                <span class="text-muted fs-xs">No filters</span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary">{{ s.results_count }} items</span>
+                        </td>
+                        <td class="small text-muted">
+                            {{ s.search_timestamp }}
+                        </td>
+                        <td class="text-end pe-3">
+                            <a href="{{ url_for('products', q=s.query, category=s.category or '', min_price=s.min_price or '', max_price=s.max_price or '', website=s.preferred_website or '', sort_by=s.sort_by or 'best_match') }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                                <i class="bi bi-arrow-repeat me-1"></i> Repeat
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+        <i class="bi bi-clock-history text-muted display-4 mb-3"></i>
+        <h4 class="fw-bold mb-2">No Search History Recorded</h4>
+        <p class="text-muted max-w-md mx-auto mb-4">
+            Search queries, price filters, and product lookups will automatically be saved here for easy one-click repeating.
+        </p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary rounded-pill px-4 mx-auto">
+            Search Products Now
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

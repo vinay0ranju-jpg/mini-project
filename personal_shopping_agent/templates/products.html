@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}Search Results for "{{ query }}" – Personal Shopping Agent{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb and Search Summary -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Search Results</li>
+        </ol>
+    </nav>
+
+    <!-- Search Header Bar -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h4 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <span>Results for:</span>
+                    <span class="text-primary">"{{ query or 'All Catalog' }}"</span>
+                    <span class="badge bg-secondary-subtle text-secondary fs-xs fw-normal">{{ total_count }} products found</span>
+                </h4>
+                <div class="text-muted small d-flex flex-wrap gap-2 align-items-center">
+                    <span><i class="bi bi-shield-check text-success"></i> Multi-store verification active</span>
+                    {% if lowest_product %}
+                    <span>• Lowest price deal: <strong class="text-success">{{ lowest_product.current_price|inr }}</strong> on <strong>{{ lowest_product.source_website }}</strong></span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Sorting & AI Recommendations Quick Link -->
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ url_for('recommendations', q=query) }}" class="btn btn-warning rounded-pill px-3 fw-semibold shadow-sm">
+                    <i class="bi bi-stars me-1"></i> AI Recommendations
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Filter Sidebar -->
+        <div class="col-lg-3">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white sticky-top" style="top: 80px; z-index: 1;">
+                <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-3">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-funnel me-1 text-primary"></i> Filters</h6>
+                    <a href="{{ url_for('products', q=query) }}" class="small text-decoration-none text-muted">Clear All</a>
+                </div>
+
+                <form action="{{ url_for('products') }}" method="GET">
+                    <input type="hidden" name="q" value="{{ query }}">
+
+                    <!-- Category Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Category</label>
+                        <select name="category" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Categories</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat }}" {% if filters.category == cat %}selected{% endif %}>{{ cat }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Store Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Shopping Store</label>
+                        <select name="website" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">All Stores</option>
+                            {% for site in supported_websites %}
+                            <option value="{{ site }}" {% if filters.website == site %}selected{% endif %}>{{ site }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Price Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Price Range (₹)</label>
+                        <div class="input-group input-group-sm mb-2">
+                            <input type="number" name="min_price" class="form-control" placeholder="Min" value="{{ filters.min_price or '' }}">
+                            <span class="input-group-text bg-light">-</span>
+                            <input type="number" name="max_price" class="form-control" placeholder="Max" value="{{ filters.max_price or '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Rating Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Minimum Rating</label>
+                        <select name="min_rating" class="form-select form-select-sm" onchange="this.form.submit()">
+                            <option value="">Any Rating</option>
+                            <option value="4.5" {% if filters.min_rating == 4.5 %}selected{% endif %}>4.5★ & Above</option>
+                            <option value="4.0" {% if filters.min_rating == 4.0 %}selected{% endif %}>4.0★ & Above</option>
+                            <option value="3.5" {% if filters.min_rating == 3.5 %}selected{% endif %}>3.5★ & Above</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort Filter -->
+                    <div class="mb-3">
+                        <label class="form-label small fw-semibold">Sort Order</label>
+                        <select name="sort_by" class="form-select form-select-sm" onchange="this.form.submit()">
+                            {% for key, label in sort_options %}
+                            <option value="{{ key }}" {% if filters.sort_by == key %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-sm btn-primary w-100 rounded-pill fw-semibold">Apply Filters</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Products Listing Grid -->
+        <div class="col-lg-9">
+            {% if products %}
+            <!-- Results Grid -->
+            <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                {% for p in products %}
+                <div class="col">
+                    <div class="card h-100 border-0 shadow-sm rounded-4 product-card position-relative overflow-hidden {% if p.is_lowest_price %}border border-2 border-success{% endif %}">
+                        
+                        <!-- Top Badges -->
+                        <div class="position-absolute top-0 start-0 m-2 z-2 d-flex flex-column gap-1">
+                            {% if p.is_lowest_price %}
+                            <span class="badge bg-success shadow-sm px-2 py-1">
+                                <i class="bi bi-tag-fill me-1"></i> Lowest Price!
+                            </span>
+                            {% endif %}
+                            {% if p.discount_percentage and p.discount_percentage > 0 %}
+                            <span class="badge bg-danger shadow-sm px-2 py-1">
+                                {{ p.discount_percentage }}% OFF
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Data Type Badge (Demonstration vs Live) -->
+                        <div class="position-absolute top-0 end-0 m-2 z-2">
+                            {% if p.data_type == 'sample' %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle" title="Curated academic demonstration data">Demo</span>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle" title="Retrieved from live e-commerce feed">Live</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Product Image -->
+                        <div class="product-img-wrapper bg-white p-3 text-center d-flex align-items-center justify-content-center" style="height: 210px;">
+                            <img src="{{ p.image_url }}" alt="{{ p.name }}" class="img-fluid object-fit-contain mh-100" onerror="this.src='/static/images/placeholder.png';">
+                        </div>
+
+                        <!-- Card Body -->
+                        <div class="card-body d-flex flex-column p-3 pt-2">
+                            <!-- Store & Category -->
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="badge bg-light text-dark border small fw-medium">
+                                    <i class="bi bi-shop me-1 text-primary"></i> {{ p.source_website }}
+                                </span>
+                                <span class="text-muted fs-xs">{{ p.category }}</span>
+                            </div>
+
+                            <!-- Product Title -->
+                            <h6 class="card-title fw-bold text-dark mb-2 text-clamp-2" title="{{ p.name }}">
+                                <a href="{{ url_for('details', product_id=p.id) }}" class="text-decoration-none text-dark hover-primary">
+                                    {{ p.name }}
+                                </a>
+                            </h6>
+
+                            <!-- Ratings & Review Count -->
+                            <div class="d-flex align-items-center gap-1 mb-2">
+                                <div class="rating-stars text-warning small">
+                                    {% set s = p.rating|stars %}
+                                    {% for _ in range(s.full) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                    {% for _ in range(s.half) %}<i class="bi bi-star-half"></i>{% endfor %}
+                                    {% for _ in range(s.empty) %}<i class="bi bi-star"></i>{% endfor %}
+                                </div>
+                                <span class="small fw-bold ms-1">{{ p.rating }}</span>
+                                <span class="text-muted fs-xs">({{ p.review_count|default(0) }} reviews)</span>
+                            </div>
+
+                            <!-- Pricing Section -->
+                            <div class="mt-auto pt-2 border-top">
+                                <div class="d-flex align-items-baseline gap-2">
+                                    <span class="fs-4 fw-bold {% if p.is_lowest_price %}text-success{% else %}text-dark{% endif %}">
+                                        {{ p.current_price|inr }}
+                                    </span>
+                                    {% if p.original_price and p.original_price > p.current_price %}
+                                    <span class="text-muted text-decoration-line-through small">
+                                        {{ p.original_price|inr }}
+                                    </span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="d-flex align-items-center justify-content-between mt-1 mb-3">
+                                    <span class="badge bg-success-subtle text-success fs-xs">{{ p.availability }}</span>
+                                    <span class="text-muted fs-xs"><i class="bi bi-clock me-1"></i>Updated recently</span>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="d-flex flex-column gap-2">
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ url_for('details', product_id=p.id) }}" class="btn btn-sm btn-outline-primary flex-grow-1 rounded-pill fw-semibold">
+                                            <i class="bi bi-eye me-1"></i> Details
+                                        </a>
+                                        <a href="{{ p.product_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light border flex-grow-1 rounded-pill fw-semibold">
+                                            <i class="bi bi-box-arrow-up-right me-1"></i> Visit Store
+                                        </a>
+                                    </div>
+                                    
+                                    <!-- Compare Checkbox Option -->
+                                    <div class="form-check form-check-inline m-0 text-center py-1 rounded bg-light border">
+                                        <input class="form-check-input compare-checkbox" type="checkbox" id="compare-check-{{ p.id }}" data-id="{{ p.id }}" data-name="{{ p.name }}" data-price="{{ p.current_price|inr }}" data-store="{{ p.source_website }}">
+                                        <label class="form-check-label small fw-medium text-secondary" for="compare-check-{{ p.id }}">
+                                            Select for Comparison
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+                <div class="mb-3">
+                    <i class="bi bi-search text-muted display-4"></i>
+                </div>
+                <h4 class="fw-bold mb-2">No Matching Products Found</h4>
+                <p class="text-muted max-w-md mx-auto mb-4">
+                    We could not find any products matching your search terms and filters. Try adjusting your budget, removing filters, or searching for broader terms like "iPhone", "Laptop", or "Headphones".
+                </p>
+                <div class="d-flex justify-content-center gap-2">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary rounded-pill px-4">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Search
+                    </a>
+                    <a href="{{ url_for('products', q='iPhone 15') }}" class="btn btn-outline-secondary rounded-pill px-4">
+                        Try Sample Search
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

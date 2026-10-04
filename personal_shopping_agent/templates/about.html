@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+
+{% block title %}About – Personal Shopping Agent{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item active" aria-current="page">About the Project</li>
+        </ol>
+    </nav>
+
+    <!-- Header Section -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 p-md-5 mb-4 bg-white">
+        <div class="max-w-xl">
+            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-1 rounded-pill mb-2 fw-semibold">
+                Academic & Mini-Project Documentation
+            </span>
+            <h2 class="fw-bold mb-3">Personal Shopping Agent System</h2>
+            <p class="lead text-muted mb-0">
+                An intelligent full-stack Python application that automates product data retrieval, performs multi-store price comparisons, analyzes genuine customer feedback with NLP/LLMs, and generates transparent recommendations.
+            </p>
+        </div>
+    </div>
+
+    <!-- Core Pillars Grid -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-shield-check text-success fs-4"></i> Responsible & Ethical Data Retrieval
+                </h5>
+                <p class="small text-muted mb-2">
+                    Online shopping sites have anti-bot protections and varying terms of service. This system follows strict ethical guidelines:
+                </p>
+                <ul class="small text-muted d-flex flex-column gap-2 ps-3 mb-0">
+                    <li><strong>No CAPTCHA Bypassing:</strong> When a site presents an anti-bot challenge or 403 status, the scraper logs the event gracefully and falls back to verified catalog demonstration records.</li>
+                    <li><strong>Polite Request Throttling:</strong> External HTTP requests apply strict 6-second timeouts with realistic browser headers to prevent denial of service.</li>
+                    <li><strong>Isolation:</strong> If one e-commerce platform fails or throttles, other sources continue to return results without crashing the application.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white h-100">
+                <h5 class="fw-bold text-dark d-flex align-items-center gap-2 mb-3">
+                    <i class="bi bi-calculator text-primary fs-4"></i> Transparent Recommendation Algorithm
+                </h5>
+                <p class="small text-muted mb-2">
+                    Unlike black-box models, recommendations are computed deterministically using standard normalized mathematical components:
+                </p>
+                <div class="p-3 bg-light rounded-3 small font-monospace mb-2">
+                    Score = (0.40 × PriceScore) + (0.25 × RatingScore) + (0.15 × ReviewVolume) + (0.10 × Sentiment) + (0.10 × Specs)
+                </div>
+                <p class="small text-muted mb-0">
+                    <strong>Dynamic Redistribution:</strong> If sentiment or technical specifications are unavailable, their weights are proportionally redistributed across available metrics so products are never unfairly penalized.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Technology Stack -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-layers text-warning fs-4"></i> Technology Stack
+        </h5>
+        <div class="row g-3">
+            <div class="col-md-3 col-sm-6">
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-laptop me-1 text-primary"></i> Frontend</h6>
+                    <span class="small text-muted">HTML5, CSS3, JavaScript (ES6), Bootstrap 5.3, Jinja2 Templates, Chart.js</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-server me-1 text-success"></i> Backend</h6>
+                    <span class="small text-muted">Python 3, Flask Application Factory, WSGI, Modular Services Architecture</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-database me-1 text-danger"></i> Database</h6>
+                    <span class="small text-muted">SQLite3, SQLAlchemy ORM, Automatic Migration & Table Initialization</span>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="p-3 bg-light rounded-3 border">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-robot me-1 text-warning"></i> AI & NLP</h6>
+                    <span class="small text-muted">Google Gemini LLM SDK / REST, Prompt Sandboxing, Local Rule-Based NLP Fallback</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Architecture Workflow -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+        <h5 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+            <i class="bi bi-diagram-3 text-info fs-4"></i> End-to-End System Workflow
+        </h5>
+        <ol class="small text-muted d-flex flex-column gap-2 mb-0 ps-3">
+            <li><strong>User Input & Validation:</strong> User submits a search query and optional filters. Input is sanitized and validated in <code>validators.py</code>.</li>
+            <li><strong>Multi-Source Retrieval:</strong> <code>ProductService</code> queries Amazon, Flipkart, Croma, and Reliance Digital modules concurrently or sequentially.</li>
+            <li><strong>Normalization & Matching:</strong> Raw responses are normalized into a unified schema. <code>ProductMatcher</code> groups verified equivalent items.</li>
+            <li><strong>Storage & Price History:</strong> SQLite database stores product records and logs price observations in <code>PriceHistory</code> for trend tracking.</li>
+            <li><strong>Comparison & Calculations:</strong> <code>ComparisonService</code> identifies lowest price, calculates absolute and percentage savings, and creates a specs matrix.</li>
+            <li><strong>AI Review Summarization:</strong> <code>ReviewAnalyzer</code> processes customer feedback using Gemini LLM or local NLP fallback.</li>
+            <li><strong>Recommendation Scoring:</strong> <code>Recommender</code> scores products to crown Lowest Price, Best Rated, and Best Overall winners.</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

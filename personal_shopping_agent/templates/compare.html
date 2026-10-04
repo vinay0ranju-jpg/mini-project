@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Price Comparison – Personal Shopping Agent{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb small">
+            <li class="breadcrumb-item"><a href="{{ url_for('index') }}" class="text-decoration-none">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ url_for('products', q='all') }}" class="text-decoration-none">Products</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Price Comparison</li>
+        </ol>
+    </nav>
+
+    <!-- Header Section -->
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-4 bg-white">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+            <div>
+                <h3 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-arrow-left-right text-warning"></i> Multi-Store Price Comparison
+                </h3>
+                <p class="text-muted small mb-0">
+                    Side-by-side pricing, store offers, customer ratings, and technical specifications.
+                </p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ url_for('products', q='all') }}" class="btn btn-outline-secondary rounded-pill btn-sm px-3">
+                    <i class="bi bi-arrow-left me-1"></i> Back to Results
+                </a>
+                <button id="btn-clear-comparison-page" class="btn btn-outline-danger rounded-pill btn-sm px-3">
+                    <i class="bi bi-trash me-1"></i> Clear Comparison
+                </button>
+            </div>
+        </div>
+
+        {% if equivalence_warning %}
+        <div class="alert alert-warning border-0 rounded-3 mt-3 mb-0 small d-flex align-items-center gap-2">
+            <i class="bi bi-exclamation-triangle-fill fs-5 text-warning"></i>
+            <div>
+                <strong>Variant Equivalence Notice:</strong> {{ equivalence_warning }}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if products %}
+    <!-- Summary Savings Card -->
+    {% if savings_amount > 0 %}
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-success-subtle text-success-emphasis border border-success-subtle">
+        <div class="row align-items-center g-3">
+            <div class="col-md-8">
+                <h5 class="fw-bold mb-1 d-flex align-items-center gap-2">
+                    <i class="bi bi-piggy-bank fs-4 text-success"></i> Maximum Savings Detected: {{ savings_amount|inr }} ({{ savings_percentage }}% less)
+                </h5>
+                <p class="small mb-0 text-success-emphasis">
+                    The verified best deal is available at <strong>{{ lowest_product.source_website }}</strong> for <strong>{{ lowest_price|inr }}</strong>, compared to the highest offer of <strong>{{ highest_price|inr }}</strong>.
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <a href="{{ lowest_product.product_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="bi bi-cart-check me-1"></i> Grab Best Deal
+                </a>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Comparison Table (Desktop view) -->
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden bg-white mb-4">
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle mb-0 text-center">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 180px;" class="text-start bg-light fw-bold">Features / Store</th>
+                        {% for p in products %}
+                        <th style="min-width: 240px;" class="{% if p.is_lowest %}bg-success-subtle border-success{% endif %}">
+                            <div class="d-flex flex-column align-items-center p-2">
+                                <span class="badge bg-primary-subtle text-primary mb-2">{{ p.source_website }}</span>
+                                <div style="height: 120px;" class="d-flex align-items-center justify-content-center mb-2">
+                                    <img src="{{ p.image_url }}" alt="{{ p.name }}" class="img-fluid object-fit-contain mh-100" onerror="this.src='/static/images/placeholder.png';">
+                                </div>
+                                <h6 class="fw-bold mb-2 text-clamp-2 small" title="{{ p.name }}">{{ p.name }}</h6>
+                                {% if p.is_lowest %}
+                                <span class="badge bg-success py-1 px-2 rounded-pill"><i class="bi bi-tag-fill me-1"></i> Lowest Verified Price</span>
+                                {% endif %}
+                            </div>
+                        </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Current Price Row -->
+                    <tr>
+                        <td class="text-start fw-bold bg-light">Current Price</td>
+                        {% for p in products %}
+                        <td class="{% if p.is_lowest %}bg-success-subtle fw-bold text-success fs-5{% else %}fs-6 fw-semibold text-dark{% endif %}">
+                            {{ p.current_price|inr }}
+                            {% if p.price_diff_vs_lowest > 0 %}
+                            <div class="fs-xs text-danger fw-normal mt-1">+{{ p.price_diff_vs_lowest|inr }} more</div>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Original Price & Discount -->
+                    <tr>
+                        <td class="text-start fw-bold bg-light">Original Price</td>
+                        {% for p in products %}
+                        <td>
+                            {% if p.original_price and p.original_price > p.current_price %}
+                            <span class="text-muted text-decoration-line-through small">{{ p.original_price|inr }}</span>
+                            <span class="badge bg-danger-subtle text-danger ms-1">{{ p.discount_percentage }}% off</span>
+                            {% else %}
+                            <span class="text-muted small">Standard Price</span>
+                            {% endif %}
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Customer Rating -->
+                    <tr>
+                        <td class="text-start fw-bold bg-light">Rating & Reviews</td>
+                        {% for p in products %}
+                        <td>
+                            <div class="d-flex justify-content-center align-items-center gap-1">
+                                <i class="bi bi-star-fill text-warning"></i>
+                                <span class="fw-bold">{{ p.rating }}</span>
+                                <span class="text-muted small">({{ p.review_count }} reviews)</span>
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Availability -->
+                    <tr>
+                        <td class="text-start fw-bold bg-light">Stock Availability</td>
+                        {% for p in products %}
+                        <td>
+                            <span class="badge bg-success-subtle text-success">{{ p.availability }}</span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Data Source Type -->
+                    <tr>
+                        <td class="text-start fw-bold bg-light">Data Verification</td>
+                        {% for p in products %}
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary">{{ p.data_type|title }} Data</span>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Action Links -->
+                    <tr>
+                        <td class="text-start fw-bold bg-light">Store Actions</td>
+                        {% for p in products %}
+                        <td>
+                            <div class="d-flex flex-column gap-2 p-1">
+                                <a href="{{ p.product_url }}" target="_blank" rel="noopener noreferrer" class="btn btn-sm {% if p.is_lowest %}btn-success{% else %}btn-primary{% endif %} rounded-pill fw-semibold">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> Visit Store
+                                </a>
+                                <a href="{{ url_for('details', product_id=p.id) }}" class="btn btn-sm btn-outline-secondary rounded-pill">
+                                    View Full Details
+                                </a>
+                            </div>
+                        </td>
+                        {% endfor %}
+                    </tr>
+
+                    <!-- Technical Specifications Matrix Section -->
+                    {% if specs_matrix %}
+                    <tr class="table-secondary">
+                        <td colspan="{{ products|length + 1 }}" class="text-start fw-bold text-uppercase py-2 ps-3">
+                            <i class="bi bi-cpu me-1"></i> Technical Specifications Comparison
+                        </td>
+                    </tr>
+                    {% for spec_name, values_dict in specs_matrix.items() %}
+                    <tr>
+                        <td class="text-start fw-semibold bg-light small">{{ spec_name }}</td>
+                        {% for p in products %}
+                        <td class="small text-muted">{{ values_dict.get(p.id, 'N/A') }}</td>
+                        {% endfor %}
+                    </tr>
+                    {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty Selection State -->
+    <div class="card border-0 shadow-sm rounded-4 p-5 text-center bg-white">
+        <i class="bi bi-arrow-left-right text-muted display-4 mb-3"></i>
+        <h4 class="fw-bold mb-2">No Products Selected for Comparison</h4>
+        <p class="text-muted max-w-md mx-auto mb-4">
+            Select 2 or more products from the catalog or search results to view side-by-side price differences and specification matrices.
+        </p>
+        <a href="{{ url_for('products', q='iPhone 15') }}" class="btn btn-primary rounded-pill px-4 mx-auto">
+            Browse Sample Comparison (iPhone 15)
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
